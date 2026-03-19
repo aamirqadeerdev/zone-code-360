@@ -68,7 +68,7 @@ if submitted:
         with st.spinner("AI Zoning Consultant is analyzing local municipal codes..."):
             try:
                 # Updated to the correct, supported Gemini model
-                model = genai.GenerativeModel('gemini-1.5-flash')
+                model = genai.GenerativeModel('gemini-pro')
                 
                 system_prompt = f"""
                 Act as a Senior US Building Code Official and Zoning Expediter with 20 years of experience.
