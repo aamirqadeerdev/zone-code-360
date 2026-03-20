@@ -96,22 +96,45 @@ if submitted and address:
         st.components.v1.iframe(map_url, width=100, height=250, scrolling=False)
         st.markdown("""<style>iframe { width: 100% !important; border-radius: 12px; border: 1px solid #cbd5e1; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); margin-bottom: 2rem;}</style>""", unsafe_allow_html=True)
 
-    # --- AI GENERATION ---
+
+# --- AI GENERATION & DOWNLOAD BUTTON ---
     try:
         genai.configure(api_key=st.secrets["api_keys"]["gemini"])
         valid_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
         best_model = 'models/gemini-1.5-flash' if 'models/gemini-1.5-flash' in valid_models else valid_models[0]
         
-        with st.spinner("Analyzing local municipal codes..."):
+        with st.spinner("Analyzing local municipal codes and building checklist..."):
             model = genai.GenerativeModel(best_model)
-            prompt = f"Act as a Senior US Zoning Expediter. Address: {address}. Building Type: {main_category}. Project Scope: {sub_category}. Provide a professional Permit Game Plan including constraints, setbacks, red flags, and forms. No emojis."
-            response = model.generate_content(prompt)
             
-            st.success(f"Analysis Complete for: {address}")
+            # We updated the prompt to ask for the simple numbered checklist!
+            prompt = f"""
+            Act as a Senior US Zoning Expediter. Address: {address}. Building Type: {main_category}. Project Scope: {sub_category}. 
+            First, provide a professional Permit Game Plan including constraints, setbacks, red flags, and forms.
+            Second, add a section called "Action Checklist". This checklist MUST be written in simple, Grade 7 English. Use short, numbered sentences telling the contractor exactly what physical steps to take next (e.g., "1. Call the city to ask about...").
+            Do NOT use emojis.
+            """
+            
+            response = model.generate_content(prompt)
+            report_text = response.text
+            
+            st.success(f"Analysis & Checklist Complete for: {address}")
+            
+            # The Download Button
+            st.download_button(
+                label="📥 Download Game Plan & Checklist (Text File)",
+                data=report_text,
+                file_name="Permit_Game_Plan.txt",
+                mime="text/plain",
+                type="primary"
+            )
+            
             st.markdown('<div class="main-card">', unsafe_allow_html=True)
             st.markdown("### Official Permit Game Plan")
-            st.markdown(response.text)
+            st.markdown(report_text)
             st.markdown('</div>', unsafe_allow_html=True)
             st.info("Disclaimer: This AI tool provides preliminary zoning guidance. Always verify with the local AHJ.")
+            
     except Exception as e:
         st.error(f"Error connecting to AI: {e}")
+
+        
