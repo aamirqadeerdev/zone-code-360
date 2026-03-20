@@ -81,37 +81,37 @@ with col2:
 
 # --- 5. PROCESSING WITH AI & GOOGLE MAPS ---
 if submitted and address:
-    with col2:
-        # --- GOOGLE MAPS EMBED ---
-        st.markdown("### 🗺️ Project Location")
-        gmaps_key = st.secrets["api_keys"].get("google_maps", "YOUR_GOOGLE_MAPS_KEY_HERE")
+    st.markdown("---") # Adds a clean visual divider line
+    
+    # --- GOOGLE MAPS EMBED (FULL WIDTH) ---
+    gmaps_key = st.secrets["api_keys"].get("google_maps", "YOUR_GOOGLE_MAPS_KEY_HERE")
+    
+    if gmaps_key == "YOUR_GOOGLE_MAPS_KEY_HERE" or not gmaps_key:
+        st.warning("⚠️ Google Maps API Key is missing from secrets. Map cannot load.")
+    else:
+        address_encoded = urllib.parse.quote(address)
+        map_url = f"https://www.google.com/maps/embed/v1/place?key={gmaps_key}&q={address_encoded}"
         
-        if gmaps_key == "YOUR_GOOGLE_MAPS_KEY_HERE" or not gmaps_key:
-            st.warning("⚠️ Google Maps API Key is missing from secrets. Map cannot load.")
-        else:
-            address_encoded = urllib.parse.quote(address)
-            map_url = f"https://www.google.com/maps/embed/v1/place?key={gmaps_key}&q={address_encoded}"
-            st.components.v1.iframe(map_url, width=100, height=400, scrolling=False)
-            # Make iframe responsive using CSS injection hack for Streamlit components
-            st.markdown("""<style>iframe { width: 100% !important; border-radius: 12px; border: 1px solid #cbd5e1; }</style>""", unsafe_allow_html=True)
+        # Because we are not inside "with col2:" anymore, this will stretch across the entire screen!
+        st.components.v1.iframe(map_url, width=100, height=250, scrolling=False)
+        st.markdown("""<style>iframe { width: 100% !important; border-radius: 12px; border: 1px solid #cbd5e1; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); margin-bottom: 2rem;}</style>""", unsafe_allow_html=True)
 
-        # --- AI GENERATION ---
-        try:
-            genai.configure(api_key=st.secrets["api_keys"]["gemini"])
-            valid_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
-            best_model = 'models/gemini-1.5-flash' if 'models/gemini-1.5-flash' in valid_models else valid_models[0]
+    # --- AI GENERATION ---
+    try:
+        genai.configure(api_key=st.secrets["api_keys"]["gemini"])
+        valid_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+        best_model = 'models/gemini-1.5-flash' if 'models/gemini-1.5-flash' in valid_models else valid_models[0]
+        
+        with st.spinner("Analyzing local municipal codes..."):
+            model = genai.GenerativeModel(best_model)
+            prompt = f"Act as a Senior US Zoning Expediter. Address: {address}. Building Type: {main_category}. Project Scope: {sub_category}. Provide a professional Permit Game Plan including constraints, setbacks, red flags, and forms. No emojis."
+            response = model.generate_content(prompt)
             
-            with st.spinner("Analyzing local municipal codes..."):
-                model = genai.GenerativeModel(best_model)
-                prompt = f"Act as a Senior US Zoning Expediter. Address: {address}. Building Type: {main_category}. Project Scope: {sub_category}. Provide a professional Permit Game Plan including constraints, setbacks, red flags, and forms. No emojis."
-                response = model.generate_content(prompt)
-                
-                st.markdown("<br>", unsafe_allow_html=True)
-                st.success(f"Analysis Complete for: {address}")
-                st.markdown('<div class="main-card">', unsafe_allow_html=True)
-                st.markdown("### 📋 Official Permit Game Plan")
-                st.markdown(response.text)
-                st.markdown('</div>', unsafe_allow_html=True)
-                st.info("Disclaimer: This AI tool provides preliminary zoning guidance. Always verify with the local AHJ.")
-        except Exception as e:
-            st.error(f"Error connecting to AI: {e}")
+            st.success(f"Analysis Complete for: {address}")
+            st.markdown('<div class="main-card">', unsafe_allow_html=True)
+            st.markdown("### Official Permit Game Plan")
+            st.markdown(response.text)
+            st.markdown('</div>', unsafe_allow_html=True)
+            st.info("Disclaimer: This AI tool provides preliminary zoning guidance. Always verify with the local AHJ.")
+    except Exception as e:
+        st.error(f"Error connecting to AI: {e}")
