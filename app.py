@@ -28,12 +28,19 @@ st.markdown("""
         border: 2px solid #2563eb !important; box-shadow: none;
     }
     
+    /* Professional Blue Buttons and Pure White Text */
     .stButton>button, .stDownloadButton>button {
-        background-color: #2563eb !important; color: white !important;
+        background-color: #2563eb !important; 
+        color: #ffffff !important;
         border-radius: 8px !important; border: none !important;
         padding: 0.6rem 1.5rem !important; font-weight: 600 !important; width: 100%;
         transition: all 0.2s ease-in-out;
     }
+    /* This wildcard forces ANY text hidden inside the button to also be white */
+    .stButton>button *, .stDownloadButton>button * {
+        color: #ffffff !important;
+    }
+    
     .stButton>button:hover, .stDownloadButton>button:hover { 
         background-color: #1d4ed8 !important; 
         box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3) !important;
@@ -108,7 +115,6 @@ if submitted and address:
         with st.spinner("Analyzing local municipal codes and verifying zoning compatibility..."):
             model = genai.GenerativeModel(best_model)
             
-            # UPDATED PROMPT: Added the "Reality Check" for places like Walmart
             prompt = f"""
             Act as a Senior US Zoning Expediter. Address: {address}. Proposed Building Type: {main_category}. Proposed Project: {sub_category}. 
             
@@ -138,7 +144,6 @@ if submitted and address:
             st.markdown(report_text)
             st.markdown('</div>', unsafe_allow_html=True)
             
-            # UPDATED DISCLAIMER TEXT
             st.info("Please verify all results with the local Authority Having Jurisdiction (AHJ) before proceeding.")
             
     except Exception as e:
