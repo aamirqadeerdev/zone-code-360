@@ -1,4 +1,5 @@
 
+
 import streamlit as st
 import google.generativeai as genai
 import urllib.parse
@@ -14,14 +15,12 @@ st.markdown("""
     h1, h2, h3 { color: #1e3a8a !important; font-weight: 700 !important; }
     p, label { color: #475569 !important; font-weight: 600 !important; }
     
-    /* Clean Document Card for the AI Report */
     .main-card {
         background-color: #ffffff; border-radius: 12px; padding: 2.5rem;
         box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border: 1px solid #e2e8f0;
         margin-bottom: 2rem;
     }
     
-    /* Input Fields */
     .stTextInput input, .stSelectbox div[data-baseweb="select"] {
         border-radius: 8px; border: 1px solid #cbd5e1; background-color: #ffffff;
     }
@@ -29,7 +28,6 @@ st.markdown("""
         border: 2px solid #2563eb !important; box-shadow: none;
     }
     
-    /* Professional Blue Buttons (Applies to both Submit and Download) */
     .stButton>button, .stDownloadButton>button {
         background-color: #2563eb !important; color: white !important;
         border-radius: 8px !important; border: none !important;
@@ -76,10 +74,8 @@ with col2:
     st.markdown("<h1>ZoneCode 360</h1>", unsafe_allow_html=True)
     st.markdown("<p style='margin-bottom: 2.5rem;'>Instantly generate Permit Game Plans and check Zoning regulations.</p>", unsafe_allow_html=True)
 
-    # Removed the white rectangle wrapper here for a cleaner look!
     st.markdown("### Project Details")
     
-    # Removed emojis from inputs for strict professional look
     address = st.text_input("Property Address", placeholder="e.g., 6410 I-45, La Marque, TX 77568")
     
     main_category = st.selectbox("Building Type", list(PROJECT_CATEGORIES.keys()))
@@ -92,7 +88,7 @@ with col2:
 if submitted and address:
     st.markdown("---") 
     
-    # --- GOOGLE MAPS EMBED (FULL WIDTH) ---
+    # --- GOOGLE MAPS EMBED ---
     gmaps_key = st.secrets["api_keys"].get("google_maps", "YOUR_GOOGLE_MAPS_KEY_HERE")
     
     if gmaps_key == "YOUR_GOOGLE_MAPS_KEY_HERE" or not gmaps_key:
@@ -109,13 +105,19 @@ if submitted and address:
         valid_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
         best_model = 'models/gemini-1.5-flash' if 'models/gemini-1.5-flash' in valid_models else valid_models[0]
         
-        with st.spinner("Analyzing local municipal codes and building checklist..."):
+        with st.spinner("Analyzing local municipal codes and verifying zoning compatibility..."):
             model = genai.GenerativeModel(best_model)
             
+            # UPDATED PROMPT: Added the "Reality Check" for places like Walmart
             prompt = f"""
-            Act as a Senior US Zoning Expediter. Address: {address}. Building Type: {main_category}. Project Scope: {sub_category}. 
-            First, provide a professional Permit Game Plan including constraints, setbacks, red flags, and forms.
-            Second, at the very end of the report, add a section titled "### Action Checklist". This checklist MUST be written in simple, Grade 7 English. Use short, numbered sentences telling the contractor exactly what physical steps to take next (e.g., "1. Call the city to ask about...").
+            Act as a Senior US Zoning Expediter. Address: {address}. Proposed Building Type: {main_category}. Proposed Project: {sub_category}. 
+            
+            CRITICAL INSTRUCTION 1: First, analyze the address. If it is a known major commercial/retail site (like a Walmart or Mall) or industrial site, and the user is asking to build a highly incompatible project (like a Single-Family Home), you MUST start the report with a bold "CRITICAL ZONING CONFLICT" warning explaining that this project is likely prohibited without massive rezoning or demolition.
+            
+            CRITICAL INSTRUCTION 2: After the reality check, provide a professional Permit Game Plan including constraints, setbacks, red flags, and forms.
+            
+            CRITICAL INSTRUCTION 3: At the end, add a section titled "### Action Checklist". This checklist MUST be written in simple, Grade 7 English. Use short, numbered sentences telling the contractor exactly what physical steps to take next (e.g., "1. Call the city to ask about...").
+            
             Do NOT use emojis anywhere in the response.
             """
             
@@ -124,7 +126,6 @@ if submitted and address:
             
             st.success(f"Analysis & Checklist Complete for: {address}")
             
-            # Professional Download Button (No emoji, solid blue)
             st.download_button(
                 label="Download Game Plan & Checklist",
                 data=report_text,
@@ -133,12 +134,13 @@ if submitted and address:
                 type="primary"
             )
             
-            # The Checklist and Report displayed beautifully on the website
             st.markdown('<div class="main-card">', unsafe_allow_html=True)
             st.markdown(report_text)
             st.markdown('</div>', unsafe_allow_html=True)
             
-            st.info("Disclaimer: This AI tool provides preliminary zoning guidance. Always verify with the local AHJ.")
+            # UPDATED DISCLAIMER TEXT
+            st.info("Please verify all results with the local Authority Having Jurisdiction (AHJ) before proceeding.")
             
     except Exception as e:
         st.error(f"Error connecting to AI: {e}")
+
